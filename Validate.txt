@@ -1,0 +1,95 @@
+Sub Validate()
+    Set Tracker = Sheets("Tracker")
+    Set SDATA = Sheets("SubmittedDATA")
+    SDATA.Activate
+    Dim x As Long
+    Dim y As Long
+    Dim z As Long
+    x = 6
+    y = 2
+    z = 0
+    Dim temp As Long
+    Set WF = Application.WorksheetFunction
+
+    Dim i As Integer
+    Dim KeepRunning As Boolean
+    
+    i = 1
+    KeepRunning = True
+    Do While KeepRunning
+        i = i + 1
+        If IsEmpty(SDATA.Cells(i, x)) Then
+            KeepRunning = False
+        End If
+    Loop
+    
+    Dim IQRMax As Double
+    Dim xMax As Double
+    Dim IQR As Double
+    Dim xAvg As Double
+    Dim IQRMin As Double
+    
+    'Loop 1 : IQR Marking
+    Dim arr() As Long
+    ReDim arr(i)
+    Do While x < 123
+        'IQR Usage
+        y = 1
+        Do While y < i
+            y = y + 1
+            If SDATA.Cells(y, 1) = SDATA.Cells(i - 1, 1) Then
+                arr(z) = SDATA.Cells(y, x)
+                z = z + 1
+            End If
+        Loop
+        xMax = WF.Quartile(arr, 3)
+        xAvg = WF.Quartile(arr, 2)
+        xMin = WF.Quartile(arr, 1)
+        IQR = xMax - xMin
+        IQRMax = xAvg + 1.5 * IQR
+        If z >= 3 Then
+            y = 1
+        Else
+            y = i
+        End If
+        z = 0
+        'Marking Usage
+        Do While y < i
+            y = y + 1
+            If SDATA.Cells(y, 1) = SDATA.Cells(i - 1, 1) Then
+                If SDATA.Cells(y, x) > IQRMax Then
+                    If Not (SDATA.Cells(y, x).Interior.color = RGB(0, 217, 0)) Then
+                        SDATA.Cells(y, x).Interior.color = RGB(217, 217, 217)
+                    End If
+                End If
+            End If
+        Loop
+        ReDim arr(i)
+        x = x + 1
+    Loop
+
+    y = 1
+    Do While y < i
+        y = y + 1
+        x = 6
+        Do While x < 123
+            If SDATA.Cells(y, x).Interior.color = RGB(217, 217, 217) Then
+                SDATA.Cells(y, x).Interior.color = RGB(217, 0, 0)
+                SDATA.Cells(y, x).Select
+                If MsgBox("On " & SDATA.Cells(y, 3) & " you have " & SDATA.Cells(y, x).Value & " for " & Tracker.Cells(1, x + 22) & " which is out of your normal range, is this the correct value?", vbYesNo) = vbNo Then
+                    temp = SDATA.Cells(y, x)
+                    SDATA.Cells(y, x) = InputBox("Please correct the value", , SDATA.Cells(y, x))
+                    If SDATA.Cells(y, x) = 0 Then
+                        SDATA.Cells(y, x) = temp
+                        SDATA.Cells(y, x).Interior.color = RGB(217, 217, 217)
+                    Else
+                        SDATA.Cells(y, x).Interior.color = RGB(0, 217, 0)
+                    End If
+                Else
+                    SDATA.Cells(y, x).Interior.color = RGB(0, 217, 0)
+                End If
+            End If
+            x = x + 1
+        Loop
+    Loop
+End Sub
